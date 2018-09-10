@@ -13,7 +13,7 @@ func main() {
 		log.Fatal("dialing:", err)
 	}
 
-	ct := provider.CronTask{1, 2}
+	ct := provider.CronTask{1, 3}
 	var reply string
 	err = client.Call("CronProvider.Cc", ct, &reply)
 	if err != nil {

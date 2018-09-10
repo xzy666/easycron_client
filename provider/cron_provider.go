@@ -3,14 +3,14 @@ package provider
 import (
 	"github.com/robfig/cron"
 	"fmt"
-	"time"
-	"bytes"
-	"os/exec"
 	"log"
 	"sync"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"easycron_client/models"
+	"time"
+	"bytes"
+	"os/exec"
 )
 
 var mainCron *cron.Cron
@@ -24,10 +24,6 @@ func init() {
 	mainCron.Start()
 }
 
-type CronTask struct {
-	Id   int
-	Type int
-}
 
 func (c *CronProvider) Cc(ct CronTask, reply *string) error {
 	task := models.Task{}
@@ -52,8 +48,6 @@ func (c *CronProvider) Cc(ct CronTask, reply *string) error {
 		go start(job, reply)
 	case STOP:
 		go stop(job, reply)
-	case GRACE:
-		go grace(job, reply)
 	case RUN_ONCE:
 		go once(job, reply)
 	default:
@@ -62,7 +56,7 @@ func (c *CronProvider) Cc(ct CronTask, reply *string) error {
 	///3.result ...
 	return nil
 }
-
+//开启定时任务
 func start(job *Job, reply *string) {
 	job.RunFunc = func(duration time.Duration) (string, string, error, bool) {
 		bufOut := new(bytes.Buffer)
@@ -78,7 +72,29 @@ func start(job *Job, reply *string) {
 	AddJob(job.Spec, job)
 	log.Println("开启任务")
 }
-
+//执行一次性脚本
+func once(job *Job, reply *string)  {
+	job.RunFunc = func(duration time.Duration) (string, string, error, bool) {
+		bufOut := new(bytes.Buffer)
+		bufErr := new(bytes.Buffer)
+		cmd := exec.Command("/bin/bash", "-c", job.Command)
+		cmd.Stdout = bufOut
+		cmd.Stderr = bufErr
+		cmd.Start()
+		err, isTimeout := runCmdWithTimeout(cmd, duration)
+		fmt.Println(bufOut.String())
+		return bufOut.String(), bufErr.String(), err, isTimeout
+	}
+	timeout := time.Duration(time.Hour * 24)
+	if job.Timeout > 0 {
+		timeout = time.Second * time.Duration(job.Timeout)
+	}
+	mainCron.AddOnceFunc(job.Spec, func() {
+		job.RunFunc(timeout)
+	},job.Title)
+	fmt.Println("执行一次性脚本")
+}
+//停止定时任务
 func stop(job *Job, reply *string) {
 	entry := GetEntryById(job.Id)
 
@@ -88,11 +104,7 @@ func stop(job *Job, reply *string) {
 	}
 	fmt.Println("结束了《" + entry.Name + "》任务")
 }
-
-func grace(job *Job, reply *string) {
-	fmt.Println("重启任务")
-}
-
+//其他信息处理
 func back(job *Job, reply *string) {
 	entry := GetEntryById(1)
 	fmt.Println(entry.Job)
@@ -101,19 +113,3 @@ func back(job *Job, reply *string) {
 	fmt.Println("back")
 }
 
-func once(job *Job, reply *string) {
-}
-func AddJob(spec string, job *Job) bool {
-	lock.Lock()
-	defer lock.Unlock()
-
-	if GetEntryById(job.Id) != nil {
-		return false
-	}
-	err := mainCron.AddJob(spec, job, job.Title)
-	if err != nil {
-		log.Fatal("AddJob: ", err.Error())
-		return false
-	}
-	return true
-}
