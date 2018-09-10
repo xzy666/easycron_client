@@ -141,7 +141,6 @@ func info(job *Job, reply *string) {
 	fmt.Println("获取定时任务的信息")
 }
 
-
 //其他信息处理
 func back(job *Job, reply *string) {
 	*reply = string(base.JsonMsg(400))
