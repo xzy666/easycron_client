@@ -5,7 +5,10 @@ import (
 	"net"
 	"log"
 	"net/http"
-	"easycron_client/provider"
+	cronProvider "easycron_client/provider/cron"
+	"github.com/go-ini/ini"
+	"fmt"
+	"os"
 )
 
 //////////////////////
@@ -13,11 +16,17 @@ import (
 /////////////////////
 
 func main() {
-	//开启cron RPC服务
+	//载入配置
+	cfg, err := ini.Load("config/app.ini")
+	if err != nil {
+		fmt.Printf("Fail to read file: %v", err)
+		os.Exit(1)
+	}
 
-	rpc.Register(new(provider.CronProvider))
+	//开启cron RPC服务
+	rpc.Register(new(cronProvider.CronProvider))
 	rpc.HandleHTTP()
-	l, e := net.Listen("tcp", ":1234")
+	l, e := net.Listen("tcp", ":"+cfg.Section("rpc").Key("port").String())
 	if e != nil {
 		log.Fatal("listen error:", e)
 	}

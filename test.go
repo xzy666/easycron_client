@@ -4,7 +4,7 @@ import (
 	"net/rpc"
 	"log"
 	"fmt"
-	"easycron_client/provider"
+	cronProvider "easycron_client/provider/cron"
 )
 
 func main() {
@@ -13,7 +13,7 @@ func main() {
 		log.Fatal("dialing:", err)
 	}
 
-	ct := provider.CronTask{1, 3}
+	ct := cronProvider.CronTask{1, 4}
 	var reply string
 	err = client.Call("CronProvider.Cc", ct, &reply)
 	if err != nil {

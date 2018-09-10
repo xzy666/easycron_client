@@ -1,4 +1,4 @@
-package provider
+package cron
 
 import "time"
 
@@ -24,7 +24,7 @@ const (
 	START = iota + 1
 	STOP
 	RUN_ONCE
-	Info
+	INFO
 )
 
 type Job struct {
