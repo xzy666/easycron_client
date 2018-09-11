@@ -55,7 +55,7 @@ func AddJob(spec string, job *Job) bool {
 /**
 	根据Id获取相关任务
  */
-func GetEntryById(id int) *cron.Entry {
+func GetEntryById(id uint) *cron.Entry {
 	entries := mainCron.Entries()
 	for _, e := range entries {
 		if v, ok := e.Job.(*Job); ok {

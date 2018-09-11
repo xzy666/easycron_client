@@ -12,6 +12,7 @@ type Task struct {
 	Status      int    `gorm:"column:status"`
 	LogId       int    `gorm:"column:log_id"`
 	Command     string `gorm:"column:command"`
+	Type        int    `gorm:"column:type"`
 }
 
 func (Task) TableName() string {

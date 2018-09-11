@@ -39,6 +39,11 @@ func init() {
 	mainCron.Start()
 
 	//如果重启了程序 则重新读取一下数据库任务 初始化任务
+	var tasks []models.Task
+	db.Where("state = 1 and type = 1").Find(&tasks)
+	for _, task := range tasks {
+		go restart(task)
+	}
 }
 
 func (c *CronProvider) Cc(ct CronTask, reply *string) error {
@@ -62,7 +67,8 @@ func (c *CronProvider) Cc(ct CronTask, reply *string) error {
 		task.Spec,
 		task.Command,
 		task.Timeout,
-		nil}
+		nil,
+		task.Status}
 	///2.deliver Rpc
 	switch job.Type {
 	case START:
@@ -136,7 +142,10 @@ func stop(job *Job, reply *string) {
 //获取定时任务信息
 func info(job *Job, reply *string) {
 	entry := GetEntryById(job.Id)
-	data, _ := json.Marshal(map[string]string{"nextTime": entry.Next.Format("2006-01-02 15:04:05"), "prevTime": entry.Prev.Format("2006-01-02 15:04:05"), "name": entry.Name})
+	data, _ := json.Marshal(map[string]string{
+		"nextTime": entry.Next.Format("2006-01-02 15:04:05"),
+		"prevTime": entry.Prev.Format("2006-01-02 15:04:05"),
+		"name":     entry.Name})
 	*reply = string(data)
 	fmt.Println("获取定时任务的信息")
 }
@@ -145,4 +154,36 @@ func info(job *Job, reply *string) {
 func back(job *Job, reply *string) {
 	*reply = string(base.JsonMsg(400))
 	fmt.Println("back")
+}
+
+
+//重启任务
+func restart(task models.Task) {
+	job := &Job{
+		task.ID,
+		task.LogId,
+		task.Type,
+		task.Title,
+		nil,
+		task.Status,
+		task.Concurrent,
+		task.Description,
+		task.Spec,
+		task.Command,
+		task.Timeout,
+		nil,
+		task.Status}
+	job.RunFunc = func(duration time.Duration) (string, string, error, bool) {
+		bufOut := new(bytes.Buffer)
+		bufErr := new(bytes.Buffer)
+		cmd := exec.Command("/bin/bash", "-c", job.Command)
+		cmd.Stdout = bufOut
+		cmd.Stderr = bufErr
+		cmd.Start()
+		err, isTimeout := runCmdWithTimeout(cmd, duration)
+
+		return bufOut.String(), bufErr.String(), err, isTimeout
+	}
+	AddJob(job.Spec, job)
+	log.Println("重启程序后，开启任务")
 }

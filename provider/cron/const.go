@@ -8,11 +8,12 @@ import "time"
 
 type CronProvider struct {
 }
+
 /**
 	rpc客户端投递的任务结构
  */
 type CronTask struct {
-	Id   int
+	Id   uint
 	Type int
 }
 
@@ -21,14 +22,14 @@ type CronTask struct {
  */
 
 const (
-	START = iota + 1
+	START    = iota + 1
 	STOP
 	RUN_ONCE
 	INFO
 )
 
 type Job struct {
-	Id          int                                               //Id
+	Id          uint                                              //Id
 	LogId       int                                               //日志Id
 	Type        int                                               //任务类型 开启关闭重启CRON
 	Title       string                                            //任务名称
@@ -40,4 +41,5 @@ type Job struct {
 	Command     string                                            //脚本
 	Timeout     int                                               //超时时间
 	Context     map[string]string                                 //脚本执行的上下文信息
+	State       int                                               //任务目前是否在执行或预备当中
 }
